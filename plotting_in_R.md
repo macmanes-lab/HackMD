@@ -30,20 +30,61 @@ View(newdata)
 
 # Change variables to plot VO2, in this case.
 
-metric <- newdata$VO2
-measurement <- newdata$VO2
-measurement_SD <- newdata$SD_VO2
+metric <- "VO2"
+SD <- "SD_VO2"
 
-
-newdata %>% 
-	ggplot(aes(as.POSIXct(with(newdata, StartDate + hms(StartTime))), y = metric, group=Animal, color=Animal)) + 
+measurement <- waterrandomsampling %>% select(metric)
+measurement_SD <- waterrandomsampling %>% select(SD)
+waterrandomsampling %>% 
+	ggplot(aes(as.POSIXct(with(waterrandomsampling, StartDate + hms(StartTime))), 
+		y = measurement[[metric]], group=Animal, color=Animal)) + 
 	geom_line() + 
-	labs(x = "") + 
-	scale_color_manual(values=c("#FF5733", "#FFFF33", "#61FF33", "#33E3FF", "#3383FF", "#FF33FF", "#050005")) +
-	geom_pointrange(aes(ymax = c(measurement + measurement_SD), ymin = c(measurement - measurement_SD)))
+	labs(x = "", y = metric) + 
+	scale_color_brewer(palette="Paired") +
+	geom_pointrange(aes(ymax = c(measurement[[metric]] + measurement_SD[[SD]]), ymin = c(measurement[[metric]] - measurement_SD[[SD]]))) +
+	theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	scale_x_datetime(date_breaks = "2 hours", date_labels = "%d%b %H:%M")
 ```
 
-![](https://i.imgur.com/vANoRbE.png)
+![](https://i.imgur.com/D41eYbd.png)
+
+
+
+## If you want to subsample out a single animal
+
+change the metric and SD, and number of animal you want to subsample
+
+```
+library(tidyverse)
+library(lubridate)
+library(readr)
+
+datafile <- "/Users/macmanes/Desktop/waterrandomsampling.csv"
+waterrandomsampling <- read_csv(datafile, 
+	col_types = cols(Animal = col_character(), 
+        StartDate = col_date(format = "%m/%d/%y"), 
+        StartTime = col_time(format = "%H:%M:%S")))
+View(waterrandomsampling)
+
+metric <- "VO2"
+SD <- "SD_VO2"
+animal <- 6
+
+measurement <- waterrandomsampling %>% filter(Animal != animal) %>% select(metric)
+measurement_SD <- waterrandomsampling %>% filter(Animal != animal) %>% select(SD)
+waterrandomsampling %>% filter(Animal != animal) %>% 
+	ggplot(aes(as.POSIXct(with(waterrandomsampling %>% filter(Animal != animal), StartDate + hms(StartTime))), 
+		y = measurement[[metric]], group=Animal, color=Animal)) + 
+	geom_line() + 
+	labs(x = "", y = metric) + 
+	scale_color_brewer(palette="Paired") +
+	geom_pointrange(aes(ymax = c(measurement[[metric]] + measurement_SD[[SD]]), ymin = c(measurement[[metric]] - measurement_SD[[SD]]))) +
+	theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	scale_x_datetime(date_breaks = "2 hours", date_labels = "%d%b %H:%M")
+
+```
+
+![](https://i.imgur.com/zedGPkf.png)
 
 
 
