@@ -4,6 +4,55 @@ tags: Rscript, macmanes
 
 # Rscript for plotting data
 
+updated...
+
+
+```
+library(tidyverse)
+library(lubridate)
+library(readr)	
+
+datafile <- "/Volumes/MACMANES/17Feb20/cages0246.csv"
+cages0246 <- read_csv(datafile, 
+	col_types = cols(Animal = col_double(), 
+        StartDate = col_date(format = "%m/%d/%Y"),
+        deltaCO2 = col_double(), 
+        deltaH2O = col_double(),
+        H2Oml = col_double(),
+        VCO2 = col_double(),
+        StartTime = col_time(format = "%H:%M:%S")))
+
+
+cages0246 <- cages0246 %>% 
+	mutate(EE = 0.06*(3.941*VO2 + 1.106*VCO2)) %>% 
+	mutate(RQ = VCO2/VO2) %>% 
+	mutate(animal = round(Animal, digits=0)) %>% 
+	mutate(Animal = NULL)
+
+
+metric <- "H2Omg"
+
+target <- c(0,2,4)
+cages <- cages0246 %>% filter(animal %in% target)
+measurement <- cages %>%  select(metric)
+df<-as.data.frame(measurement[[metric]])
+legend_title <- "Cage Number"
+
+p <- ggplot(data = cages,aes(x=as.POSIXct(StartTime),y=measurement[[metric]]))
+p <- p + geom_point(aes(group=as.factor(animal), color=as.factor(animal)), size = 3)
+p <- p + theme_grey(base_size = 15)
+p <- p + geom_smooth(data=df$V1)
+p <- p + labs(x = "", y = metric)
+p <- p + scale_color_brewer(legend_title, palette="Paired")
+p <- p + scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M")
+p
+
+```
+
+![](https://i.imgur.com/fuiIFEb.png)
+
+
+
 ```
 #Before plotting (Should add this to R script)
 # 1. open macro'd csv file on your own computer and re-save to fix the date issue (otherwise, manually edit years to be only 2 digits)
@@ -108,3 +157,34 @@ axis(1, at=1:27, labels=c(0,1,2,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4,5)
 
 - [ ] Need to work with Dani/Jocie to make sure at least VO2 makes sense, cause it did in the raw data.. Otherwise this is a macro issue
 - [ ] Also note that O2 != VO2, but still..
+
+#### a different way to plot
+
+```
+datafile <- "/Volumes/MACMANES/15Feb20/cages135.csv"
+cages135 <- read_csv(datafile, 
+	col_types = cols(Animal = col_character(), 
+        StartDate = col_date(format = "%m/%d/%y"), 
+        StartTime = col_time(format = "%H:%M:%S")))
+
+cages135 <- cages135 %>% mutate(EE = 0.06*(3.941*VO2 + 1.106*VCO2))
+cages135 <- cages135 %>% mutate(RQ = VCO2/VO2)
+  
+metric <- "EE"
+SD <- "SD_H2Omg"
+
+target <- c(1,3,5)
+cages <- cages135 %>% filter(Animal %in% target)
+measurement <- cages %>%  select(metric)
+df<-as.data.frame(measurement[[metric]])
+
+p <- ggplot(data = cages,aes(x=as.POSIXct(StartTime),y=measurement[[metric]]))
+p <- p + geom_point(aes(group=Animal, color=Animal))
+p <- p + geom_smooth(data=df$V1)
+p <- p + labs(x = "", y = metric)
+p <- p + scale_color_brewer(palette="Paired")
+p <- p + scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M")
+p
+```
+
+![](https://i.imgur.com/JjgntrQ.png)
