@@ -12,8 +12,8 @@ library(tidyverse)
 library(lubridate)
 library(readr)	
 
-datafile <- "/Volumes/MACMANES/17Feb20/cages0246.csv"
-cages0246 <- read_csv(datafile, 
+datafile <- "/Volumes/MACMANES/18Feb20/cages012346.csv"
+cages012346 <- read_csv(datafile, 
 	col_types = cols(Animal = col_double(), 
         StartDate = col_date(format = "%m/%d/%Y"),
         deltaCO2 = col_double(), 
@@ -23,17 +23,18 @@ cages0246 <- read_csv(datafile,
         StartTime = col_time(format = "%H:%M:%S")))
 
 
-cages0246 <- cages0246 %>% 
+cages012346 <- cages012346 %>% 
 	mutate(EE = 0.06*(3.941*VO2 + 1.106*VCO2)) %>% 
 	mutate(RQ = VCO2/VO2) %>% 
 	mutate(animal = round(Animal, digits=0)) %>% 
 	mutate(Animal = NULL)
 
 
-metric <- "H2Omg"
+metric <- "EE"
 
-target <- c(0,2,4)
-cages <- cages0246 %>% filter(animal %in% target)
+target <- c(0,1,2,3,4,6)
+cages <- cages012346 %>% filter(animal %in% target)
+#cages <- with( cages ,cages[ hour( StartTime ) >= 0 & hour( StartTime ) < 4 , ] )
 measurement <- cages %>%  select(metric)
 df<-as.data.frame(measurement[[metric]])
 legend_title <- "Cage Number"
@@ -44,6 +45,7 @@ p <- p + theme_grey(base_size = 15)
 p <- p + geom_smooth(data=df$V1)
 p <- p + labs(x = "", y = metric)
 p <- p + scale_color_brewer(legend_title, palette="Paired")
+#p <- p + geom_hline(yintercept = 0.8907387)
 p <- p + scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M")
 p
 
