@@ -20,6 +20,14 @@ cageweight4 <- 21.8
 cageweight5 <- 15.6
 cageweight6 <- 15.4
 
+animalID0 <- 377
+animalID1 <- 234
+animalID2 <- 748
+animalID3 <- 1002
+animalID4 <- 870
+animalID5 <- 333
+animalID6 <- 74
+
 datafile <- "/Volumes/4TB_1/Dropbox/Cactus_Mouse_Physiology/data/20Feb20/feb20.csv"
 feb20 <- read_csv(datafile, 
 	col_types = cols(Animal = col_double(), 
@@ -32,7 +40,7 @@ feb20 <- read_csv(datafile,
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-feb20a <- feb20 %>% 
+feb20 <- feb20 %>% 
 	mutate(EE = 0.06*(3.941*VO2 + 1.106*VCO2)) %>% 
 	mutate(RQ = VCO2/VO2) %>%
 	mutate(animal = round(Animal, digits=0)) %>%
@@ -46,6 +54,14 @@ feb20a <- feb20 %>%
 		ifelse(animal == 4, cageweight4,
 		ifelse(animal == 5, cageweight5,
 		ifelse(animal == 6, cageweight6, NA)))))))) %>% 
+	mutate(Animal_ID = 
+		ifelse(animal == 0, animalID0, 
+		ifelse(animal == 1, animalID1,
+		ifelse(animal == 2, animalID2,
+		ifelse(animal == 3, animalID3,
+		ifelse(animal == 4, animalID4,
+		ifelse(animal == 5, animalID5,
+		ifelse(animal == 6, animalID6, NA)))))))) %>% 
 	mutate(H2Omg_edit = 
 		ifelse(hour(StartTime) == 8, H2Omg - 0.09536454,
 		ifelse(hour(StartTime) == 7, H2Omg - 0.06536454,
@@ -62,15 +78,15 @@ feb20a <- feb20 %>%
 metric <- "corEE"
 
 target <- c(0,1,2,3,4,5,6)
-cages <- feb20a %>% filter(animal %in% target)
+cages <- feb20 %>% filter(animal %in% target)
 #cages <- with( cages ,cages[ hour( StartTime ) >= 0 & hour( StartTime ) < 4 , ] )
 
 measurement <- cages %>%  select(metric)
 df<-as.data.frame(measurement[[metric]])
-legend_title <- "Cage Number"
+legend_title <- "Animal ID"
 
 p <- ggplot(data = cages,aes(x=as.POSIXct(StartTime),y=measurement[[metric]]))
-p <- p + geom_point(aes(group=as.factor(animal), color=as.factor(animal)), size = 3)
+p <- p + geom_point(aes(group=as.factor(Animal_ID), color=as.factor(Animal_ID)), size = 3)
 p <- p + theme_grey(base_size = 15)
 p <- p + geom_smooth(data=df$V1, method='loess', span=.9)
 p <- p + labs(x = "", y = metric)
@@ -78,8 +94,6 @@ p <- p + scale_color_brewer(legend_title, palette="Paired")
 p <- p + scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M")
 #p <- p + geom_hline(yintercept = 0.8907387)
 p
-
-
 ```
 
 ![](https://i.imgur.com/fuiIFEb.png)
