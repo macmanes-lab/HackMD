@@ -12,8 +12,16 @@ library(tidyverse)
 library(lubridate)
 library(readr)	
 
-datafile <- "/Volumes/MACMANES/18Feb20/cages012346.csv"
-cages012346 <- read_csv(datafile, 
+cageweight0 <- 20.1
+cageweight1 <- 22.6
+cageweight2 <- 21.1
+cageweight3 <- 23.1
+cageweight4 <- 21.8
+cageweight5 <- 15.6
+cageweight6 <- 15.4
+
+datafile <- "/Volumes/4TB_1/Dropbox/Cactus_Mouse_Physiology/data/20Feb20/feb20.csv"
+feb20 <- read_csv(datafile, 
 	col_types = cols(Animal = col_double(), 
         StartDate = col_date(format = "%m/%d/%Y"),
         deltaCO2 = col_double(), 
@@ -22,19 +30,41 @@ cages012346 <- read_csv(datafile,
         VCO2 = col_double(),
         StartTime = col_time(format = "%H:%M:%S")))
 
+'%!in%' <- function(x,y)!('%in%'(x,y))
 
-cages012346 <- cages012346 %>% 
+feb20a <- feb20 %>% 
 	mutate(EE = 0.06*(3.941*VO2 + 1.106*VCO2)) %>% 
-	mutate(RQ = VCO2/VO2) %>% 
-	mutate(animal = round(Animal, digits=0)) %>% 
-	mutate(Animal = NULL)
+	mutate(RQ = VCO2/VO2) %>%
+	mutate(animal = round(Animal, digits=0)) %>%
+	mutate(Animal = NULL) %>%
+	unite("DateTime", StartDate:StartTime, remove = FALSE, sep =  " ") %>%
+	mutate(weight = 
+		ifelse(animal == 0, cageweight0, 
+		ifelse(animal == 1, cageweight1,
+		ifelse(animal == 2, cageweight2,
+		ifelse(animal == 3, cageweight3,
+		ifelse(animal == 4, cageweight4,
+		ifelse(animal == 5, cageweight5,
+		ifelse(animal == 6, cageweight6, NA)))))))) %>% 
+	mutate(H2Omg_edit = 
+		ifelse(hour(StartTime) == 8, H2Omg - 0.09536454,
+		ifelse(hour(StartTime) == 7, H2Omg - 0.06536454,
+		ifelse(hour(StartTime) == 9, H2Omg - 0.02219424,
+		ifelse(hour(StartTime) == 10, H2Omg - 0.03273413,
+		ifelse(hour(StartTime) == 19, H2Omg + 0.002130708,
+		ifelse(hour(StartTime) == 20, H2Omg + 0.02967473,
+		ifelse(hour(StartTime) == 21, H2Omg + 0.02703453,
+		ifelse(hour(StartTime) == 22, H2Omg + 0.01412046,
+		ifelse(hour(StartTime) %!in% c(7,8,9,10,20,21,22,19), H2Omg, NA)))))))))) %>% 
+	mutate_at("H2Omg_edit", as.numeric) %>%
+	mutate(corEE = EE/weight)
 
+metric <- "corEE"
 
-metric <- "EE"
-
-target <- c(0,1,2,3,4,6)
-cages <- cages012346 %>% filter(animal %in% target)
+target <- c(0,1,2,3,4,5,6)
+cages <- feb20a %>% filter(animal %in% target)
 #cages <- with( cages ,cages[ hour( StartTime ) >= 0 & hour( StartTime ) < 4 , ] )
+
 measurement <- cages %>%  select(metric)
 df<-as.data.frame(measurement[[metric]])
 legend_title <- "Cage Number"
@@ -42,12 +72,13 @@ legend_title <- "Cage Number"
 p <- ggplot(data = cages,aes(x=as.POSIXct(StartTime),y=measurement[[metric]]))
 p <- p + geom_point(aes(group=as.factor(animal), color=as.factor(animal)), size = 3)
 p <- p + theme_grey(base_size = 15)
-p <- p + geom_smooth(data=df$V1)
+p <- p + geom_smooth(data=df$V1, method='loess', span=.9)
 p <- p + labs(x = "", y = metric)
 p <- p + scale_color_brewer(legend_title, palette="Paired")
-#p <- p + geom_hline(yintercept = 0.8907387)
 p <- p + scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M")
+#p <- p + geom_hline(yintercept = 0.8907387)
 p
+
 
 ```
 
@@ -56,9 +87,6 @@ p
 
 
 ```
-#Before plotting (Should add this to R script)
-# 1. open macro'd csv file on your own computer and re-save to fix the date issue (otherwise, manually edit years to be only 2 digits)
-# 2. Manually edit animal cage numbers to be numbers with no decimals
 
 #load packages
 
